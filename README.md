@@ -28,3 +28,5 @@ Testing
 - Docker
 - K3d: ~v5.4.6 (k3s ~v1.24)
 - Helm: v3
+- Pipenv
+- Python 3.9+
