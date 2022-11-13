@@ -14,7 +14,8 @@ class InstallingEndToEndTest(EndToEndTestBase):
           - Deploys a Helm Chart "charts/" from subdirectory
         """
         ns = "backup-maker-operator"
-        with kubernetes_namespace(ns):
-            with controller_repository_at_revision(self.release["CONTROLLER_VERSION"]):
+
+        with controller_repository_at_revision(self.release["CONTROLLER_VERSION"]):
+            with kubernetes_namespace(ns):
                 apply_manifests("config/crd/bases")
                 skaffold_deploy(ns)
