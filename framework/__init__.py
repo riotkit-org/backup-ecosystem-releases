@@ -6,7 +6,7 @@ import unittest
 from typing import Dict
 
 TESTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-BUILD_DIR = TESTS_DIR + "/../.build"
+BUILD_DIR = TESTS_DIR + "/.build"
 
 
 class EndToEndTestBase(unittest.TestCase):
@@ -57,10 +57,30 @@ class EndToEndTestBase(unittest.TestCase):
         os.chdir(TESTS_DIR)
 
 
-def skaffold_deploy():
-    sp.check_call(["skaffold", "build"])
-    sp.check_call(["skaffold", "deploy"])
-    sp.check_call(["skaffold", "apply"])
+def apply_manifests(path: str):
+    sp.check_output(["kubectl", "apply", "-f", path])
+
+
+def skaffold_deploy(namespace: str):
+    """
+    Deploy a Kubernetes application using Skaffold
+    """
+    sp.check_call(["skaffold", "build", "--tag", "e2e"])
+    sp.check_call(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "-n", namespace, "--default-repo",
+                   "bmt-registry:5000"])
+
+
+@contextlib.contextmanager
+def kubernetes_namespace(name: str):
+    """
+    Create a Kubernetes namespace temporarily
+    """
+    try:
+        sp.call(["kubectl", "create", "ns", name], stderr=sp.DEVNULL, stdout=sp.DEVNULL)
+        sp.check_output(["kubens", name])
+        yield
+    finally:
+        sp.check_output(["kubectl", "delete", "ns", name, "--wait=true"])
 
 
 @contextlib.contextmanager

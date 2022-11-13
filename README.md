@@ -30,3 +30,5 @@ Testing
 - Helm: v3
 - Pipenv
 - Python 3.9+
+- kubectl v1.24+
+- kubens

@@ -1,4 +1,5 @@
-from framework import controller_repository_at_revision, EndToEndTestBase, skaffold_deploy
+from framework import controller_repository_at_revision, EndToEndTestBase, skaffold_deploy, apply_manifests, \
+    kubernetes_namespace
 
 
 class InstallingEndToEndTest(EndToEndTestBase):
@@ -12,6 +13,8 @@ class InstallingEndToEndTest(EndToEndTestBase):
           - Pushes to local registry at :5000 port
           - Deploys a Helm Chart "charts/" from subdirectory
         """
-
-        with controller_repository_at_revision(self.release["CONTROLLER_VERSION"]):
-            skaffold_deploy()
+        ns = "backup-maker-operator"
+        with kubernetes_namespace(ns):
+            with controller_repository_at_revision(self.release["CONTROLLER_VERSION"]):
+                apply_manifests("config/crd/bases")
+                skaffold_deploy(ns)
