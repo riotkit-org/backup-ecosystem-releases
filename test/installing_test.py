@@ -1,5 +1,4 @@
-from framework import controller_repository_at_revision, EndToEndTestBase, skaffold_deploy, apply_manifests, \
-    kubernetes_namespace
+from framework import controller_repository_at_revision, EndToEndTestBase
 
 
 class InstallingEndToEndTest(EndToEndTestBase):
@@ -16,6 +15,8 @@ class InstallingEndToEndTest(EndToEndTestBase):
         ns = "backup-maker-operator"
 
         with controller_repository_at_revision(self.release["CONTROLLER_VERSION"]):
-            with kubernetes_namespace(ns):
-                apply_manifests("config/crd/bases")
-                skaffold_deploy(ns)
+            with self.kubernetes_namespace(ns):
+                self.apply_manifests("config/crd/bases")
+                self.skaffold_deploy()
+
+                assert self.has_pod_with_label_present("app=backup-maker-operator")

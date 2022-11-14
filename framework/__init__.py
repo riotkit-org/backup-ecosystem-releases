@@ -1,4 +1,5 @@
 import os.path
+import subprocess
 import subprocess as sp
 import contextlib
 import dotenv
@@ -15,6 +16,7 @@ BUILD_DIR = TESTS_DIR + "/../.build"
 
 class EndToEndTestBase(unittest.TestCase):
     release: Dict[str, str]
+    current_ns: str
 
     @classmethod
     def _setup_env(cls):
@@ -56,35 +58,57 @@ class EndToEndTestBase(unittest.TestCase):
         cls._setup_cluster()
         cls._setup_hosts()
 
+    def setUp(self) -> None:
+        self.current_ns = "default"
+
     @classmethod
     def tearDownClass(cls) -> None:
         os.chdir(TESTS_DIR)
 
+    @contextlib.contextmanager
+    def kubernetes_namespace(self, name: str):
+        """
+        Create a Kubernetes namespace temporarily
+        """
+        prev_ns = self.current_ns
 
-def apply_manifests(path: str):
-    run(["kubectl", "apply", "-f", path])
+        try:
+            self.current_ns = name
+            run(["kubectl", "create", "ns", name])
+            run(["kubens", name])
+            yield
+        finally:
+            self.current_ns = prev_ns
+            run(["kubectl", "delete", "ns", name, "--wait=true"])
 
+    def skaffold_deploy(self, namespace: str = ''):
+        """
+        Deploy a Kubernetes application using Skaffold
+        """
+        if not namespace:
+            namespace = self.current_ns
 
-def skaffold_deploy(namespace: str):
-    """
-    Deploy a Kubernetes application using Skaffold
-    """
-    run(["skaffold", "build", "--tag", "e2e"])
-    run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "-n", namespace, "--default-repo",
-         "bmt-registry:5000"])
+        run(["skaffold", "build", "--tag", "e2e"])
+        run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "-n", namespace, "--default-repo",
+             "bmt-registry:5000"])
 
+    def has_pod_with_label_present(self, label: str, ns: str = '') -> bool:
+        """
+        Is there a Pod labelled?
+        """
+        if not ns:
+            ns = self.current_ns
 
-@contextlib.contextmanager
-def kubernetes_namespace(name: str):
-    """
-    Create a Kubernetes namespace temporarily
-    """
-    try:
-        run(["kubectl", "create", "ns", name])
-        run(["kubens", name])
-        yield
-    finally:
-        run(["kubectl", "delete", "ns", name, "--wait=true"])
+        try:
+            run(["kubectl", "get", "pods", "-n", ns, "-l", label])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+    def apply_manifests(self, path: str, ns: str = ''):
+        if not ns:
+            ns = self.current_ns
+        run(["kubectl", "apply", "-f", path, "-n", ns])
 
 
 @contextlib.contextmanager
