@@ -34,4 +34,4 @@ jobs:
 
             - name: Test
               run: |
-                  make test
+                  pipenv run make test
