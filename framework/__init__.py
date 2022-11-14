@@ -6,7 +6,11 @@ import unittest
 from typing import Dict
 
 TESTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-BUILD_DIR = TESTS_DIR + "/.build"
+
+if not TESTS_DIR.endswith("/test"):
+    TESTS_DIR += "/test"
+
+BUILD_DIR = TESTS_DIR + "/../.build"
 
 
 class EndToEndTestBase(unittest.TestCase):
@@ -17,7 +21,7 @@ class EndToEndTestBase(unittest.TestCase):
         """
         Loads release configuration
         """
-        cls.release = dotenv.dotenv_values("../release.env")
+        cls.release = dotenv.dotenv_values(TESTS_DIR + "/../release.env")
 
     @staticmethod
     def _setup_cluster():
