@@ -11,5 +11,12 @@ deploy:
               namespace: db
               createNamespace: true
               wait: true
-              valuesFiles:
-                  - helm/examples/postgresql.values.yaml
+              setValues:
+                  auth:
+                      username: riotkit
+                      password: warisbad
+                      database: backup-repository
+                  architecture: standalone
+                  # speed up testing
+                  primary:
+                      terminationGracePeriodSeconds: 1
