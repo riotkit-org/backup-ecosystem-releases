@@ -105,7 +105,11 @@ class EndToEndTestBase(unittest.TestCase):
             content = f.read()
 
         if "build:" in content:
-            run(["skaffold", "build", "--tag", "e2e", "--default-repo", "bmt-registry:5000", "--push"])
+            run(["skaffold", "build",
+                 "--tag", "e2e",
+                 "--default-repo", "bmt-registry:5000",
+                 "--push",
+                 "--insecure-registry", "bmt-registry:5000"])
 
         run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "--default-repo",
              "bmt-registry:5000"])
