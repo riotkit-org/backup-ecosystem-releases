@@ -144,6 +144,7 @@ def cloned_repository_at_revision(url: str, version: str):
 
     try:
         run(["git", "checkout", version])
+        run(["git", "pull"])
         run(["git", "reset", "--hard", "HEAD"])
         run(["git", "clean", "-fx"])
         yield
