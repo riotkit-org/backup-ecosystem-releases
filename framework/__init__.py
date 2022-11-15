@@ -74,22 +74,23 @@ class EndToEndTestBase(unittest.TestCase):
 
         try:
             self.current_ns = name
-            run(["kubectl", "create", "ns", name])
+            try:
+                run(["kubectl", "create", "ns", name])
+            except:
+                # we pass, as the kubens will validate it anyway and we want to keep existing namespace
+                pass
             run(["kubens", name])
             yield
         finally:
             self.current_ns = prev_ns
             run(["kubectl", "delete", "ns", name, "--wait=true"])
 
-    def skaffold_deploy(self, namespace: str = ''):
+    def skaffold_deploy(self):
         """
         Deploy a Kubernetes application using Skaffold
         """
-        if not namespace:
-            namespace = self.current_ns
-
-        run(["skaffold", "build", "--tag", "e2e"])
-        run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "-n", namespace, "--default-repo",
+        run(["skaffold", "build", "--tag", "e2e", "--default-repo", "bmt-registry:5000", "--push"])
+        run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "--default-repo",
              "bmt-registry:5000"])
 
     def has_pod_with_label_present(self, label: str, ns: str = '') -> bool:
@@ -112,12 +113,13 @@ class EndToEndTestBase(unittest.TestCase):
 
 
 @contextlib.contextmanager
-def controller_repository_at_revision(version: str):
-    if not os.path.isdir("backup-maker-operator"):
-        run(["git", "clone", "https://github.com/riotkit-org/backup-maker-operator"])
+def cloned_repository_at_revision(url: str, version: str):
+    repo_name = url.split("/")[-1].replace(".git", "")
+    if not os.path.isdir(repo_name):
+        run(["git", "clone", url])
 
     pwd = os.getcwd()
-    os.chdir(pwd + "/backup-maker-operator")
+    os.chdir(pwd + "/" + repo_name)
 
     try:
         run(["git", "checkout", version])
@@ -132,5 +134,5 @@ def run(*popenargs, **kwargs):
     try:
         sp.check_output(*popenargs, **kwargs, stderr=sp.STDOUT)
     except sp.CalledProcessError as err:
-        print(err.output)
+        print(err.output.decode('utf-8'))
         raise err
