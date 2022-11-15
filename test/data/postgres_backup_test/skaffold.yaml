@@ -1,0 +1,15 @@
+---
+apiVersion: skaffold/v3
+kind: Config
+deploy:
+    helm:
+        releases:
+            - name: test
+              repo: https://charts.bitnami.com/bitnami
+              version: 12.1.2
+              remoteChart: postgresql
+              namespace: db
+              createNamespace: true
+              wait: true
+              valuesFiles:
+                  - helm/examples/postgresql.values.yaml

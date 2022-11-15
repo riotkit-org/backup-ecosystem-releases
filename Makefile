@@ -11,6 +11,10 @@ prepare-tools:
 	# kubens
 	@test -f .build/kubens || (curl -sL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens --output .build/kubens && chmod +x .build/kubens)
 
+fix-hosts:
+	cat /etc/hosts | grep "bmt-registry" > /dev/null || (sudo /bin/bash -c "echo '127.0.0.1 bmt-registry' >> /etc/hosts")
+	cat /etc/hosts | grep "bm-registry" > /dev/null || (sudo /bin/bash -c "echo '127.0.0.1 bm-registry' >> /etc/hosts")
+
 .PHONY: test
-test: prepare-tools
+test: prepare-tools fix-hosts
 	PATH="$${PATH}":$$(pwd)/.build PYTHONPATH="$${PYTHONPATH}:$$(pwd)" pytest . -s
