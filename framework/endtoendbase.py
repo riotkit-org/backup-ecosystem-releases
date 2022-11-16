@@ -139,6 +139,8 @@ class EndToEndTestBase(unittest.TestCase):
         if not ns:
             ns = self.current_ns
 
+        yaml = yaml.strip()
+
         try:
             run(["kubectl", "apply", "-f", "-", "-n", ns], input=yaml.encode('utf-8'))
         except:

@@ -8,13 +8,39 @@ class PostgresBackupTest(ClientServerBase):
             # deploy a test postgres instance
             self.skaffold_deploy()
 
-            self.i_create_a_user(
+            self.server.i_create_a_user(
                 name="international-workers-association",
                 email="example@iwa-ait.org",
                 password="cnt1936",
             )
 
-            # self.i_create_a_collection(
+            # self.server.i_create_a_collection(
             #     name="",
             #     filenameTemplate=""
             # )
+
+            # access_token = self.server.i_generate_an_access_token(
+            #     username="international-workers-association",
+            #     password="cnt1936"
+            # )
+
+            # Prepare the subject of our backup
+            # self.pg_query("CREATE TABLE ...")
+            # self.pg_query("INSERT INTO ...")
+
+            # Create a backup definition
+            # self.client.i_schedule_a_backup()
+
+            # Run backup action immediately
+            # self.client.i_request_backup_action()
+
+            # assert self.client.backup_has_completed_status(scheduled_backup_name="app1", version="v1")
+
+            # Add EXTRA ROW that would be reverted after the backup was restored
+            # self.pg_query("INSERT INTO ...")
+
+            # Try to restore
+            # self.client.i_request_backup_action()
+
+            # Check
+            # assert self.pg_query("SELECT ...") == "anarchist movement"
