@@ -109,7 +109,7 @@ class EndToEndTestBase(unittest.TestCase):
                  "--insecure-registry", "bmt-registry:5000"])
 
         run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "--default-repo",
-             "bmt-registry:5000", "--port-forward"])
+             "bmt-registry:5000"])
 
     def has_pod_with_label_present(self, label: str, ns: str = '') -> bool:
         """

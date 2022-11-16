@@ -114,6 +114,8 @@ class ClientServerBase(EndToEndTestBase):
         current_test_class = self.__class__.__name__
         if ClientServerBase.last_test_class != current_test_class:
             self._deploy_client_and_server(delete=False, retries_left=5)
+            self._port_forward(local_port=8070, remote_port=8080, ns="backups",
+                               service_name="server-backup-repository-server")
             ClientServerBase.last_test_class = current_test_class
         # --- end of hack
 
@@ -145,6 +147,10 @@ class ClientServerBase(EndToEndTestBase):
                 self._deploy_client_and_server(delete=delete, retries_left=retries_left-1)
                 return
             raise
+
+    def _port_forward(self, local_port: int, remote_port: int, service_name: str, ns: str) -> None:
+        subprocess.Popen(["kubectl", "port-forward", "-n", ns,
+                          f"service/{service_name}", f"{local_port}:{remote_port}"])
 
     # ---
     #  End of technical methods
