@@ -125,9 +125,25 @@ class EndToEndTestBase(unittest.TestCase):
             return False
 
     def apply_manifests(self, path: str, ns: str = ''):
+        """
+        Applies a file or directory to Kubernetes
+        """
         if not ns:
             ns = self.current_ns
         run(["kubectl", "apply", "-f", path, "-n", ns])
+
+    def apply_yaml(self, yaml: str, ns: str = ''):
+        """
+        Applies a plain YAML on Kubernetes from stdin
+        """
+        if not ns:
+            ns = self.current_ns
+
+        try:
+            run(["kubectl", "apply", "-f", "-", "-n", ns], input=yaml.encode('utf-8'))
+        except:
+            print(yaml)
+            raise
 
 
 @contextlib.contextmanager
