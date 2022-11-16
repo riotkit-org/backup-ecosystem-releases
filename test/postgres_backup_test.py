@@ -4,7 +4,7 @@ from framework import ClientServerBase
 class PostgresBackupTest(ClientServerBase):
     def test_postgres_backup_and_restore(self):
         with self.in_dir("test/data/postgres_backup_test"), \
-                self.kubernetes_namespace("db"):
+                self.kubernetes_namespace("subject"):
             # deploy a test postgres instance
             self.skaffold_deploy()
 
@@ -14,10 +14,15 @@ class PostgresBackupTest(ClientServerBase):
                 password="cnt1936",
             )
 
-            # self.server.i_create_a_collection(
-            #     name="",
-            #     filenameTemplate=""
-            # )
+            self.server.i_create_a_collection(
+                name="iwa-ait",
+                description="IWA-AIT website files",
+                filename_template="iwa-ait-${version}.tar.gz",
+                max_backups_count=5,
+                max_one_version_size="1M",
+                max_collection_size="10M",
+                strategy_name="fifo"
+            )
 
             # access_token = self.server.i_generate_an_access_token(
             #     username="international-workers-association",

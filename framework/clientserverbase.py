@@ -45,6 +45,46 @@ class _Server:
             password: {encoded_password}
         """)
 
+    def i_create_a_collection(self, name: str, description: str, filename_template: str, max_backups_count: int,
+                              max_one_version_size: str, max_collection_size: str, strategy_name: str):
+        self._parent.apply_yaml("""
+        ---
+        apiVersion: v1
+        kind: Secret
+        metadata:
+            name: backup-repository-collection-secrets
+        type: Opaque
+        data:
+            # to generate: use echo -n "admin" | sha256sum
+            iwa-ait: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+        """)
+
+        self._parent.apply_yaml(f"""
+        ---
+        apiVersion: backups.riotkit.org/v1alpha1
+        kind: BackupCollection
+        metadata:
+            name: {name}
+        spec:
+            description: "{description}"
+            filenameTemplate: {filename_template}
+            maxBackupsCount: {max_backups_count}
+            maxOneVersionSize: "{max_one_version_size}"
+            maxCollectionSize: "{max_collection_size}"
+            #windows:
+            #    - from: "*/30 * * * *"
+            #      duration: 30m
+            strategyName: {strategy_name}
+            strategySpec: {"{}"}
+            healthSecretRef:
+                name: backup-repository-collection-secrets
+                entry: iwa-ait
+            accessControl:
+                - userName: admin
+                  roles:
+                      - collectionManager
+        """)
+
 
 class ClientServerBase(EndToEndTestBase):
     last_test_class: str = ""
@@ -86,7 +126,6 @@ class ClientServerBase(EndToEndTestBase):
                             self.apply_manifests("config/crd/bases")
                             self.skaffold_deploy()
                             os.chdir(pwd)
-                            yield
 
         # be bulletproof on CI, avoid random failures sacrificing execution time
         except:
