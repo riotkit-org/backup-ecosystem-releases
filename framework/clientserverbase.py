@@ -1,14 +1,18 @@
 import os
 import subprocess
 
-from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision
+import requests
+
+from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision, run
 
 
 class _Server:
     _parent: EndToEndTestBase
+    _url: str
 
-    def __init__(self, parent: EndToEndTestBase):
+    def __init__(self, parent: EndToEndTestBase, url: str):
         self._parent = parent
+        self._url = url
 
     def i_create_a_user(self, name: str, email: str, password: str):
         encoded_password = subprocess.check_output(["br", "--encode-password", password], stderr=subprocess.STDOUT) \
@@ -85,6 +89,14 @@ class _Server:
                       - collectionManager
         """)
 
+    def i_generate_an_access_token(self, username: str, password: str) -> str:
+        response = requests.get(self._url + "/api/stable/auth/login", json={
+            "username": username,
+            "password": password,
+        })
+        body = response.json()
+        return body["data"]["token"]
+
 
 class ClientServerBase(EndToEndTestBase):
     last_test_class: str = ""
@@ -96,7 +108,7 @@ class ClientServerBase(EndToEndTestBase):
 
     def setUp(self) -> None:
         EndToEndTestBase.setUp(self)
-        self.server = _Server(self)
+        self.server = _Server(self, "http://127.0.0.1:8070")
 
         # --- hack: deploy only once, before first test starts
         current_test_class = self.__class__.__name__

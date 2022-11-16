@@ -8,12 +8,14 @@ class PostgresBackupTest(ClientServerBase):
             # deploy a test postgres instance
             self.skaffold_deploy()
 
+            # ------------------------
+            # Prepare server instance
+            # ------------------------
             self.server.i_create_a_user(
                 name="international-workers-association",
                 email="example@iwa-ait.org",
                 password="cnt1936",
             )
-
             self.server.i_create_a_collection(
                 name="iwa-ait",
                 description="IWA-AIT website files",
@@ -23,11 +25,12 @@ class PostgresBackupTest(ClientServerBase):
                 max_collection_size="10M",
                 strategy_name="fifo"
             )
+            access_token = self.server.i_generate_an_access_token(
+                username="international-workers-association",
+                password="cnt1936"
+            )
 
-            # access_token = self.server.i_generate_an_access_token(
-            #     username="international-workers-association",
-            #     password="cnt1936"
-            # )
+            print(access_token)
 
             # Prepare the subject of our backup
             # self.pg_query("CREATE TABLE ...")
