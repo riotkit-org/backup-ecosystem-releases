@@ -76,7 +76,7 @@ class EndToEndTestBase(unittest.TestCase):
             os.chdir(prev_cwd)
 
     @contextlib.contextmanager
-    def kubernetes_namespace(self, name: str):
+    def kubernetes_namespace(self, name: str, persistent: bool = False):
         """
         Create a Kubernetes namespace temporarily
         """
@@ -84,16 +84,13 @@ class EndToEndTestBase(unittest.TestCase):
 
         try:
             self.current_ns = name
-            try:
-                run(["kubectl", "create", "ns", name])
-            except:
-                # we pass, as the kubens will validate it anyway and we want to keep existing namespace
-                pass
+            sp.call(["kubectl", "create", "ns", name], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
             run(["kubens", name])
             yield
         finally:
-            self.current_ns = prev_ns
-            run(["kubectl", "delete", "ns", name, "--wait=true"])
+            if not persistent:
+                self.current_ns = prev_ns
+                run(["kubectl", "delete", "ns", name, "--wait=true"])
 
     def skaffold_deploy(self):
         """
