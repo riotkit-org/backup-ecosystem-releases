@@ -7,6 +7,9 @@ class PostgresBackupTest(ClientServerBase):
                 self.kubernetes_namespace("subject"):
             # deploy a test postgres instance
             self.skaffold_deploy()
+            self.port_forward(local_port=8053, remote_port=5432,
+                              pod_label="app.kubernetes.io/name=postgresql",
+                              ns="subject")
 
             # ------------------------
             # Prepare server instance
@@ -25,12 +28,10 @@ class PostgresBackupTest(ClientServerBase):
                 max_collection_size="10M",
                 strategy_name="fifo"
             )
-            access_token = self.server.i_generate_an_access_token(
+            access_token = self.server.i_login(
                 username="international-workers-association",
                 password="cnt1936"
             )
-
-            print(access_token)
 
             # Prepare the subject of our backup
             # self.pg_query("CREATE TABLE ...")

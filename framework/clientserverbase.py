@@ -1,9 +1,7 @@
 import os
 import subprocess as sp
 import requests
-import re
-
-from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision, run
+from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision
 
 
 class _Server:
@@ -91,7 +89,7 @@ class _Server:
                       - collectionManager
         """)
 
-    def i_generate_an_access_token(self, username: str, password: str) -> str:
+    def i_login(self, username: str, password: str) -> str:
         response = requests.post(self._url + "/api/stable/auth/login", json={
             "username": username,
             "password": password,
@@ -116,8 +114,8 @@ class ClientServerBase(EndToEndTestBase):
         current_test_class = self.__class__.__name__
         if ClientServerBase.last_test_class != current_test_class:
             self._deploy_client_and_server(delete=False, retries_left=5)
-            self._port_forward(local_port=8070, remote_port=8080, ns="backups",
-                               service_name="server-backup-repository-server")
+            self.port_forward(local_port=8070, remote_port=8080, ns="backups",
+                              pod_label="app.kubernetes.io/name=backup-repository-server")
             ClientServerBase.last_test_class = current_test_class
         # --- end of hack
 
@@ -149,20 +147,6 @@ class ClientServerBase(EndToEndTestBase):
                 self._deploy_client_and_server(delete=delete, retries_left=retries_left-1)
                 return
             raise
-
-    def _port_forward(self, local_port: int, remote_port: int, service_name: str, ns: str) -> None:
-        try:
-            existing = sp.check_output(["/bin/sh", "-c",
-                                        f"ps aux | grep kube | grep forward "
-                                        f"| grep '{local_port}:{remote_port}' | grep -v grep"])
-            parsed = re.findall("([a-zA-Z0-9]+)s+([0-9]+)", existing.decode('utf-8'))
-            if len(parsed) > 0:
-                sp.check_call(["kill", "-9", parsed[0][1]])
-        except sp.CalledProcessError:
-            pass
-
-        sp.Popen(["kubectl", "port-forward", "-n", ns, f"service/{service_name}", f"{local_port}:{remote_port}"],
-                 stdout=sp.DEVNULL)
 
     # ---
     #  End of technical methods

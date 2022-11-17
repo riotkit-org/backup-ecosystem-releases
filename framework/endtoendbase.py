@@ -4,6 +4,8 @@ import subprocess as sp
 import contextlib
 import dotenv
 import unittest
+import _portforward as portforward
+import portforward as portforwardpub
 from typing import Dict
 
 TESTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -145,6 +147,30 @@ class EndToEndTestBase(unittest.TestCase):
             run(["kubectl", "apply", "-f", "-", "-n", ns], input=yaml.encode('utf-8'))
         except:
             print(yaml)
+            raise
+
+    @staticmethod
+    def port_forward(local_port: int, remote_port: int, pod_label: str, ns: str, retry_left: int = 5) -> None:
+        pod_name = "?"
+        try:
+            try:
+                pod_name = sp.check_output(["kubectl", "get", "pod", "-l", pod_label, "-n", ns, "-o", "name"]) \
+                    .replace(b"pod/", b"", 1).decode("utf-8").strip()
+            except sp.CalledProcessError:
+                raise Exception(f"Cannot make a port-forward, Pod not found for label {pod_label}")
+
+            try:
+                portforward.stop(ns, pod_name)
+            except:
+                pass
+            portforward.forward(ns, pod_name, local_port, remote_port,
+                                portforwardpub._config_path(None),
+                                portforwardpub.LogLevel.ERROR.value)
+        except:
+            if retry_left > 0:
+                print(f"pod_name: {pod_name}")
+                EndToEndTestBase.port_forward(local_port, remote_port, pod_label, ns, retry_left-1)
+                return
             raise
 
 

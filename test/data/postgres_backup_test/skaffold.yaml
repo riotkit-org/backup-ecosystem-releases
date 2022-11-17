@@ -8,7 +8,7 @@ deploy:
               repo: https://charts.bitnami.com/bitnami
               version: 12.1.2
               remoteChart: postgresql
-              namespace: db
+              namespace: subject
               createNamespace: true
               wait: true
               setValues:
