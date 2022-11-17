@@ -9,10 +9,12 @@ from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision, run
 class _Server:
     _parent: EndToEndTestBase
     _url: str
+    _ns: str
 
-    def __init__(self, parent: EndToEndTestBase, url: str):
+    def __init__(self, parent: EndToEndTestBase, url: str, ns: str):
         self._parent = parent
         self._url = url
+        self._ns = ns
 
     def i_create_a_user(self, name: str, email: str, password: str):
         encoded_password = sp.check_output(["br", "--encode-password", password], stderr=sp.STDOUT) \
@@ -38,16 +40,16 @@ class _Server:
             roles:
                 - systemAdmin
              
-        """)
+        """, ns=self._ns)
         self._parent.apply_yaml(f"""
         ---
         apiVersion: v1
         kind: Secret
         metadata:
             name: {name}-secret
-        stringData:
+        data:
             password: {encoded_password}
-        """)
+        """, ns=self._ns)
 
     def i_create_a_collection(self, name: str, description: str, filename_template: str, max_backups_count: int,
                               max_one_version_size: str, max_collection_size: str, strategy_name: str):
@@ -108,7 +110,7 @@ class ClientServerBase(EndToEndTestBase):
 
     def setUp(self) -> None:
         EndToEndTestBase.setUp(self)
-        self.server = _Server(self, "http://127.0.0.1:8070")
+        self.server = _Server(self, "http://127.0.0.1:8070", ns="backups")
 
         # --- hack: deploy only once, before first test starts
         current_test_class = self.__class__.__name__
@@ -159,7 +161,8 @@ class ClientServerBase(EndToEndTestBase):
         except sp.CalledProcessError:
             pass
 
-        sp.Popen(["kubectl", "port-forward", "-n", ns, f"service/{service_name}", f"{local_port}:{remote_port}"])
+        sp.Popen(["kubectl", "port-forward", "-n", ns, f"service/{service_name}", f"{local_port}:{remote_port}"],
+                 stdout=sp.DEVNULL)
 
     # ---
     #  End of technical methods
