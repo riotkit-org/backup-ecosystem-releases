@@ -90,7 +90,7 @@ class _Server:
         """)
 
     def i_generate_an_access_token(self, username: str, password: str) -> str:
-        response = requests.get(self._url + "/api/stable/auth/login", json={
+        response = requests.post(self._url + "/api/stable/auth/login", json={
             "username": username,
             "password": password,
         })
