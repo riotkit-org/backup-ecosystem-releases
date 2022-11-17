@@ -19,4 +19,4 @@ fix-hosts:
 
 .PHONY: test
 test: prepare-tools fix-hosts
-	PATH="$${PATH}":$$(pwd)/.build PYTHONPATH="$${PYTHONPATH}:$$(pwd)" pytest . -s
+	PATH="$${PATH}":$$(pwd)/.build PYTHONPATH="$${PYTHONPATH}:$$(pwd)" pytest . -s --tb=short
