@@ -35,3 +35,11 @@ jobs:
             - name: Test
               run: |
                   pipenv run make test
+
+            - name: Test Report
+              uses: dorny/test-reporter@v1
+              if: always()
+              with:
+                  name: Test report
+                  path: report.junit.xml
+                  reporter: java-junit
