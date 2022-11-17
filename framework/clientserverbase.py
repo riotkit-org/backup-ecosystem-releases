@@ -1,7 +1,7 @@
 import os
-import subprocess
-
+import subprocess as sp
 import requests
+import re
 
 from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision, run
 
@@ -15,7 +15,7 @@ class _Server:
         self._url = url
 
     def i_create_a_user(self, name: str, email: str, password: str):
-        encoded_password = subprocess.check_output(["br", "--encode-password", password], stderr=subprocess.STDOUT) \
+        encoded_password = sp.check_output(["br", "--encode-password", password], stderr=sp.STDOUT) \
             .strip().decode('utf-8')
 
         self._parent.apply_yaml(f"""
@@ -149,8 +149,17 @@ class ClientServerBase(EndToEndTestBase):
             raise
 
     def _port_forward(self, local_port: int, remote_port: int, service_name: str, ns: str) -> None:
-        subprocess.Popen(["kubectl", "port-forward", "-n", ns,
-                          f"service/{service_name}", f"{local_port}:{remote_port}"])
+        try:
+            existing = sp.check_output(["/bin/sh", "-c",
+                                        f"ps aux | grep kube | grep forward "
+                                        f"| grep '{local_port}:{remote_port}' | grep -v grep"])
+            parsed = re.findall("([a-zA-Z0-9]+)\s+([0-9]+)", existing.decode('utf-8'))
+            if len(parsed) > 0:
+                sp.check_call(["kill", "-9", parsed[0][1]])
+        except sp.CalledProcessError:
+            pass
+
+        sp.Popen(["kubectl", "port-forward", "-n", ns, f"service/{service_name}", f"{local_port}:{remote_port}"])
 
     # ---
     #  End of technical methods
