@@ -155,7 +155,7 @@ class ClientServerBase(EndToEndTestBase):
             existing = sp.check_output(["/bin/sh", "-c",
                                         f"ps aux | grep kube | grep forward "
                                         f"| grep '{local_port}:{remote_port}' | grep -v grep"])
-            parsed = re.findall("([a-zA-Z0-9]+)\s+([0-9]+)", existing.decode('utf-8'))
+            parsed = re.findall("([a-zA-Z0-9]+)s+([0-9]+)", existing.decode('utf-8'))
             if len(parsed) > 0:
                 sp.check_call(["kill", "-9", parsed[0][1]])
         except sp.CalledProcessError:
