@@ -169,16 +169,22 @@ class _Client:
                 name: {ref}
         """)
 
-    def backup_has_completed_status(self, name: str, timeout: int = 60, retries_left: int = 5) -> bool:
+    def backup_has_completed_status(self, name: str, timeout: int = 10, retries_left: int = 10) -> bool:
         try:
-            self._parent.kubectl(f"wait --for=jsonpath='.status.childrenResourcesHealth[0].running'=false "
-                                 f"requestedbackupaction {name} -n subject --timeout={timeout}s", shell=True)
+            try:
+                self._parent.kubectl(f"wait --for=jsonpath='.status.childrenResourcesHealth[0].running'=false "
+                                     f"requestedbackupaction {name} -n subject --timeout={timeout}s", shell=True)
+            except:
+                pass
 
-            return self._parent.kubectl(["get", "requestedbackupaction", name, "-o", "jsonpath='{.status.healthy}'"])\
-                .lower().strip() == "true"
-        except sp.CalledProcessError as err:
+            return self._parent.kubectl([
+                "get", "requestedbackupaction", name,
+                "-o", "jsonpath='{.status.healthy},{.status.childrenResourcesHealth[0].running}'"])\
+                .lower().strip() == "true,false"
+
+        except sp.CalledProcessError:
             if retries_left > 0:
-                time.sleep(1)
+                time.sleep(2)
                 return self.backup_has_completed_status(name, timeout, retries_left-1)
             raise
 
