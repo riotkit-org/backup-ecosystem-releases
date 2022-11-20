@@ -15,7 +15,7 @@ deploy:
                   auth:
                       username: riotkit
                       password: warisbad
-                      database: backup-repository
+                      database: backuprepository
                   architecture: standalone
                   # speed up testing
                   primary:

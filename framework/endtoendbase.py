@@ -6,7 +6,7 @@ import dotenv
 import unittest
 import _portforward as portforward
 import portforward as portforwardpub
-from typing import Dict
+from typing import Dict, Union, List
 
 TESTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -125,6 +125,34 @@ class EndToEndTestBase(unittest.TestCase):
             return True
         except subprocess.CalledProcessError:
             return False
+
+    def kubectl(self, popenargs: Union[str, List[str]], **kwargs) -> str:
+        """
+        Executes a kubectl command and returns output
+        """
+        if type(popenargs) == list:
+            if "kubectl" not in popenargs:
+                popenargs = ["kubectl"] + popenargs
+            if "-n" not in popenargs and "--namespace" not in popenargs:
+                popenargs = popenargs + ["-n", self.current_ns]
+        else:
+            if "kubectl" not in popenargs:
+                popenargs = "kubectl " + popenargs
+            if "-n " not in popenargs and "--namespace " not in popenargs:
+                popenargs += " -n " + self.current_ns + " "
+
+        return sp.check_output(popenargs, **kwargs, timeout=None).decode('utf-8')
+
+    def logs(self, pod_label: str, ns: str, allow_failure: bool = True):
+        """
+        Shows logs
+        """
+        try:
+            print(f" >>> Logs: {pod_label} from '{ns}' namespace")
+            print(self.kubectl(["logs", "-l", pod_label, "-n", ns]))
+        except:
+            if allow_failure:
+                raise
 
     def apply_manifests(self, path: str, ns: str = ''):
         """

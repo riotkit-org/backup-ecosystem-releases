@@ -1,5 +1,10 @@
+import contextlib
+import dataclasses
 import os
 import subprocess as sp
+import textwrap
+import time
+
 import requests
 from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision
 
@@ -98,9 +103,90 @@ class _Server:
         return body["data"]["token"]
 
 
+@dataclasses.dataclass
+class _Client:
+    ns: str
+    _parent: EndToEndTestBase
+
+    def i_schedule_a_backup(self, name: str, operation: str, email: str, cronjob_enabled: bool, schedule_every: str,
+                            collection_id: str, access_token: str, template_name: str, template_vars: str):
+        self._parent.apply_yaml(ns=self.ns, yaml=f"""
+        ---
+        apiVersion: v1
+        kind: Secret
+        metadata:
+            name: backup-keys
+            namespace: {self.ns}
+        stringData:
+            passpharse: ""
+            token: "{access_token}"
+        """)
+
+        self._parent.apply_yaml(ns=self.ns, yaml=f"""
+        ---
+        apiVersion: riotkit.org/v1alpha1
+        kind: ScheduledBackup
+        metadata:
+            name: {name}
+            namespace: {self.ns}
+        spec:
+            operation: {operation}
+            cronJob:
+                enabled: {str(cronjob_enabled).lower()}
+                scheduleEvery: "{schedule_every}"
+            collectionId: {collection_id}
+            gpgKeySecretRef:
+                createIfNotExists: true
+                email: {email}
+                passphraseKey: passphrase
+                privateKey: private
+                publicKey: public
+                secretName: backup-keys
+            tokenSecretRef:
+                secretName: backup-keys
+                tokenKey: token
+            templateRef:
+                kind: ClusterBackupProcedureTemplate
+                name: {template_name}
+        
+            vars: |
+{textwrap.indent(template_vars, "                ")}
+            varsSecretRef: {"{}"}
+        """)
+
+    def i_request_backup_action(self, name: str, action: str, ref: str, kind_type: str = "Job"):
+        self._parent.apply_yaml(ns=self.ns, yaml=f"""
+        ---
+        apiVersion: riotkit.org/v1alpha1
+        kind: RequestedBackupAction
+        metadata:
+            name: {name}
+            namespace: {self.ns}
+        spec:
+            kindType: {kind_type}
+            action: {action}
+            scheduledBackupRef:
+                name: {ref}
+        """)
+
+    def backup_has_completed_status(self, name: str, timeout: int = 60, retries_left: int = 5) -> bool:
+        try:
+            self._parent.kubectl(f"wait --for=jsonpath='.status.childrenResourcesHealth[0].running'=false "
+                                 f"requestedbackupaction {name} -n subject --timeout={timeout}s", shell=True)
+
+            return self._parent.kubectl(["get", "requestedbackupaction", name, "-o", "jsonpath='{.status.healthy}'"])\
+                .lower().strip() == "true"
+        except sp.CalledProcessError as err:
+            if retries_left > 0:
+                time.sleep(1)
+                return self.backup_has_completed_status(name, timeout, retries_left-1)
+            raise
+
+
 class ClientServerBase(EndToEndTestBase):
     last_test_class: str = ""
     server: _Server
+    client: _Client
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -109,6 +195,7 @@ class ClientServerBase(EndToEndTestBase):
     def setUp(self) -> None:
         EndToEndTestBase.setUp(self)
         self.server = _Server(self, "http://127.0.0.1:8070", ns="backups")
+        self.client = _Client(_parent=self, ns="subject")
 
         # --- hack: deploy only once, before first test starts
         current_test_class = self.__class__.__name__
@@ -118,6 +205,15 @@ class ClientServerBase(EndToEndTestBase):
                               pod_label="app.kubernetes.io/name=backup-repository-server")
             ClientServerBase.last_test_class = current_test_class
         # --- end of hack
+
+    @contextlib.contextmanager
+    def show_logs_on_failure(self):
+        try:
+            yield
+        except:
+            self.logs(pod_label="app.kubernetes.io/name=backup-repository-server", ns="backups", allow_failure=True)
+            self.logs(pod_label="app=backup-maker-operator", ns="backup-maker-operator", allow_failure=True)
+            raise
 
     def _deploy_client_and_server(self, delete: bool = True, retries_left: int = 0):
         """
