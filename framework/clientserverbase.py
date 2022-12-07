@@ -206,7 +206,8 @@ class ClientServerBase(EndToEndTestBase):
         # --- hack: deploy only once, before first test starts
         current_test_class = self.__class__.__name__
         if ClientServerBase.last_test_class != current_test_class:
-            self._deploy_client_and_server(delete=False, retries_left=5)
+            if os.getenv("SKIP_CLIENT_SERVER_INSTALL") != "true":
+                self._deploy_client_and_server(delete=False, retries_left=5)
             self.port_forward(local_port=8070, remote_port=8080, ns="backups",
                               pod_label="app.kubernetes.io/name=backup-repository-server")
             ClientServerBase.last_test_class = current_test_class

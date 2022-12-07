@@ -22,7 +22,13 @@ In order to make a release there is a release branch created, then tagged.
 Testing
 -------
 
+```bash
+make test
+```
+
 ### Requirements
+
+The following requirements are automatically installed when using `make` to run tests.
 
 - Skaffold: v2.0.0+
 - Docker
@@ -32,3 +38,26 @@ Testing
 - Python 3.9+
 - kubectl v1.24+
 - kubens
+
+
+### Advanced
+
+#### Using backup-repository and backup-maker-operator from local directories instead of cloning during the tests.
+
+```bash
+rm .build/backup-maker-operator -rf
+rm .build/backup-repository -rf
+ln -s {backup-operator-path-there} $(pwd)/.build/backup-maker-operator
+ln -s {backup-repository-path-there} $(pwd)/.build/backup-repository
+```
+
+Then run tests with:
+```bash
+export SKIP_GIT_PULL=true
+```
+
+#### Skipping installation of server and client
+
+```bash
+export SKIP_CLIENT_SERVER_INSTALL=true
+```
