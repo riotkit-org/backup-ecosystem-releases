@@ -73,7 +73,7 @@ class PostgresBackupTest(ClientServerBase):
                 email="example@iwa-ait.org",
                 template_vars=f"""
                     Params:
-                        hostname: postgres-postgresql.subject.svc.cluster.local
+                        hostname: test-postgresql.subject.svc.cluster.local
                         port: 5432
                         db: backuprepository
                         user: riotkit
@@ -95,7 +95,6 @@ class PostgresBackupTest(ClientServerBase):
                 action="backup",
                 ref="app1",
             )
-
             assert self.client.backup_has_completed_status(name="iwa-ait-v1-backup")
 
             # Add EXTRA ROW that would be reverted after the backup was restored
@@ -105,11 +104,12 @@ class PostgresBackupTest(ClientServerBase):
             """)
 
             # Try to restore
-            # self.client.i_request_backup_action(
-            #     name="iwa-ait-v1-restore",
-            #     action="restore",
-            #     ref="app1",
-            # )
+            self.client.i_request_backup_action(
+                name="iwa-ait-v1-restore",
+                action="restore",
+                ref="app1",
+            )
+            assert self.client.backup_has_completed_status(name="iwa-ait-v1-restore")
 
             # Check
             # assert self.pg_query("SELECT ...") == "anarchist movement"
