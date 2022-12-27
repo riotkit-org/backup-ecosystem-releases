@@ -69,8 +69,9 @@ class PostgresBackupTest(ClientServerBase):
                 schedule_every="00 02 * * *",
                 collection_id="iwa-ait",
                 access_token=access_token,
-                template_name="pg13",
+                template_name="pg15",
                 email="example@iwa-ait.org",
+                # language=yaml
                 template_vars=f"""
                     Params:
                         hostname: test-postgresql.subject.svc.cluster.local
@@ -95,7 +96,7 @@ class PostgresBackupTest(ClientServerBase):
                 action="backup",
                 ref="app1",
             )
-            assert self.client.backup_has_completed_status(name="iwa-ait-v1-backup")
+            assert self.client.backup_has_status(name="iwa-ait-v1-backup", expected=True)
 
             # Add EXTRA ROW that would be reverted after the backup was restored
             self.postgres.query("""
@@ -103,13 +104,17 @@ class PostgresBackupTest(ClientServerBase):
                 COMMIT;
             """)
 
+            self.assertEqual([('Ni dieu ni maitre, une historie de l"anarchisme',), ('Some-wrong-title',)],
+                             self.postgres.select("SELECT name FROM public.movies"))
+
             # Try to restore
             self.client.i_request_backup_action(
                 name="iwa-ait-v1-restore",
                 action="restore",
                 ref="app1",
             )
-            assert self.client.backup_has_completed_status(name="iwa-ait-v1-restore")
+            assert self.client.backup_has_status(name="iwa-ait-v1-restore", expected=True)
 
             # Check
-            # assert self.pg_query("SELECT ...") == "anarchist movement"
+            self.assertEqual([('Ni dieu ni maitre, une historie de l"anarchisme',)],
+                             self.postgres.select("SELECT name FROM public.movies"))

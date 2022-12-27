@@ -98,6 +98,8 @@ class EndToEndTestBase(unittest.TestCase):
         """
         Deploy a Kubernetes application using Skaffold
         """
+        print(f"Running skaffold in {os.getcwd()}")
+
         assert os.path.isfile("skaffold.yaml"), "Cannot find skaffold.yaml in " + os.getcwd()
 
         with open("skaffold.yaml", "r") as f:
@@ -108,7 +110,8 @@ class EndToEndTestBase(unittest.TestCase):
                  "--tag", "e2e",
                  "--default-repo", "bmt-registry:5000",
                  "--push",
-                 "--insecure-registry", "bmt-registry:5000"])
+                 "--insecure-registry", "bmt-registry:5000", "--disable-multi-platform-build=true",
+                 "--detect-minikube=false", "--cache-artifacts=false"])
 
         run(["skaffold", "deploy", "--tag", "e2e", "--assume-yes=true", "--default-repo",
              "bmt-registry:5000"])
@@ -205,16 +208,22 @@ class EndToEndTestBase(unittest.TestCase):
 @contextlib.contextmanager
 def cloned_repository_at_revision(url: str, version: str):
     repo_name = url.split("/")[-1].replace(".git", "")
-    if not os.path.isdir(repo_name):
-        run(["git", "clone", url])
 
     pwd = os.getcwd()
-    os.chdir(pwd + "/" + repo_name)
+
+    if not os.path.isdir(BUILD_DIR + "/" + repo_name):
+        os.chdir(BUILD_DIR)
+        run(["git", "clone", url])
 
     try:
+        os.chdir(BUILD_DIR + "/" + repo_name)
         run(["git", "checkout", version])
 
-        if os.getenv("SKIP_GIT_PULL") != "true":
+        if os.getenv("SKIP_GIT_PULL") == "true":
+            print("Skipping git pull because of SKIP_GIT_PULL=true")
+        elif os.path.islink(BUILD_DIR + "/" + repo_name):
+            print(f"Skipping git pull because {BUILD_DIR}/{repo_name} is a link")
+        else:
             run(["git", "pull"])
             run(["git", "reset", "--hard", "HEAD"])
             run(["git", "clean", "-fx"])
@@ -225,7 +234,9 @@ def cloned_repository_at_revision(url: str, version: str):
 
 def run(*popenargs, **kwargs):
     try:
-        sp.check_output(*popenargs, **kwargs, stderr=sp.STDOUT)
+        out = sp.check_output(*popenargs, **kwargs, stderr=sp.STDOUT)
+        if os.getenv('VERBOSE') == "true":
+            print(out.decode('utf-8'))
     except sp.CalledProcessError as err:
         print(err.output.decode('utf-8'))
         raise err

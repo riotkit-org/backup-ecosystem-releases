@@ -61,3 +61,9 @@ export SKIP_GIT_PULL=true
 ```bash
 export SKIP_CLIENT_SERVER_INSTALL=true
 ```
+
+#### Increasing verbosity
+
+```bash
+export VERBOSE=true
+```

@@ -43,7 +43,7 @@ class _Server:
             roles:
                 - systemAdmin
              
-        """, ns=self._ns)
+        """, ns="backups")
         self._parent.apply_yaml(f"""
         ---
         apiVersion: v1
@@ -52,7 +52,7 @@ class _Server:
             name: {name}-secret
         data:
             password: {encoded_password}
-        """, ns=self._ns)
+        """, ns="backups")
 
     def i_create_a_collection(self, name: str, description: str, filename_template: str, max_backups_count: int,
                               max_one_version_size: str, max_collection_size: str, strategy_name: str):
@@ -66,7 +66,7 @@ class _Server:
         data:
             # to generate: use echo -n "admin" | sha256sum
             iwa-ait: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
-        """)
+        """, ns="backups")
 
         self._parent.apply_yaml(f"""
         ---
@@ -92,7 +92,7 @@ class _Server:
                 - userName: admin
                   roles:
                       - collectionManager
-        """)
+        """, ns="backups")
 
     def i_login(self, username: str, password: str) -> str:
         response = requests.post(self._url + "/api/stable/auth/login", json={
@@ -118,7 +118,7 @@ class _Client:
             name: backup-keys
             namespace: {self.ns}
         stringData:
-            passpharse: ""
+            passphrase: ""
             token: "{access_token}"
         """)
 
@@ -169,23 +169,31 @@ class _Client:
                 name: {ref}
         """)
 
-    def backup_has_completed_status(self, name: str, timeout: int = 10, retries_left: int = 10) -> bool:
+    def backup_has_status(self, name: str, expected: bool,
+                          kubectl_timeout: int = 10, retries_left: int = 10) -> bool:
         try:
             try:
                 self._parent.kubectl(f"wait --for=jsonpath='.status.childrenResourcesHealth[0].running'=false "
-                                     f"requestedbackupaction {name} -n subject --timeout={timeout}s", shell=True)
+                                     f"requestedbackupaction {name} -n subject --timeout={kubectl_timeout}s", shell=True)
             except:
                 pass
 
-            return self._parent.kubectl([
+            cmd = [
                 "get", "requestedbackupaction", name,
-                "-o", "jsonpath='{.status.healthy},{.status.childrenResourcesHealth[0].running}'"])\
-                .lower().strip() == "true,false"
+                "-o", "jsonpath='{.status.healthy},{.status.childrenResourcesHealth[0].running}'"]
+            out = self._parent.kubectl(cmd).lower().strip().strip("'")
+            result = out == 'true,false'
+
+            if result != expected and retries_left > 0:
+                time.sleep(2)
+                return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
+
+            return result
 
         except sp.CalledProcessError:
             if retries_left > 0:
                 time.sleep(2)
-                return self.backup_has_completed_status(name, timeout, retries_left-1)
+                return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
             raise
 
 
