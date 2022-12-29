@@ -5,18 +5,35 @@ Backup Repository is a complex system with a set of repositories, for this reaso
 
 We perform there End-To-End tests for selected software configurations.
 
-Example flow
-------------
+Example flow (Kubernetes)
+-------------------------
 
 ![](docs/flow.png)
 
 1. Desired backup & restore definition is submitted by the user in form of `kind: ScheduledBackup`, `kind: RequestedBackupAction`
 2. API server passes definitions to Backup Maker Controller
-3. Backup Maker Controller creates `kind: Job`, `kind: CronJob`, `kind: Secret`
-4. Backup & Restore procedures are templated by [Backup Maker Generator](https://github.com/riotkit-org/br-backup-maker/tree/main/generate) and put into `kind: ConfigMap`
-5. When the `kind: Job` starts the generated script loaded from `kind: ConfigMap` is running inside a `kind: Pod`
-6. **Some tooling (like mysqldump, psql, tar etc.) inside container** is used to dump or restore the data
-7. [backup-maker CLI client](https://github.com/riotkit-org/br-backup-maker) is communicating with server to download or upload the backup
+3. Backup & Restore procedures are templated by [Backup Maker Generator](https://github.com/riotkit-org/br-backup-maker/tree/main/generate), then Backup Maker Controller is applying those Kubernetes resource to the cluster
+4. When the `kind: Job` starts the generated script loaded from `kind: ConfigMap` is running inside a `kind: Pod`
+5. **Some tooling (like mysqldump, psql, tar etc.) inside container** is used to dump or restore the data
+6. [backup-maker CLI client](https://github.com/riotkit-org/br-backup-maker) is communicating with server to download or upload the backup
+
+#### backup-maker-controller role
+
+Orchestration. Backup & Restore definitions written in `kind: ScheduledBackup` and `kind: RequestedBackupAction` are changed into pure Kubernetes resources like `kind: Job`, `kind: Secret`, `kind: ConfigMap`.
+
+#### backup-maker generator role
+
+Backup Maker Generator is generating Backup & Restore scripts and templating Kubernetes resources.
+When you run a `backup-maker generate backup` or `backup-maker generate restore` subcommand a script and Kubernetes resources as plain YAMLs are generated.
+**The same thing is performed by Backup Maker Controller**, when it is receiving your `kind: ScheduledBackup` definition.
+
+#### backup-maker client role
+
+The client is used inside a script, that in Kubernetes is executed inside a Pod.
+
+1. After Backup Maker Controller applies `kind: Job` or `kind: CronJob` the cluster is creating a `kind: Pod`.
+2. The `kind: Pod` fetches a shell script with a backup & restore procedure **(generated previously by the generator)** and executes.
+3. Executed script calls required client tools like pg_dump, mysqldump, tar etc. to prepare the data, **and calls backup-maker client to interact with the server - upload or download**
 
 Versioning
 ----------
