@@ -85,9 +85,9 @@ The following requirements are automatically installed when using `make` to run 
 #### Using backup-repository and backup-maker-controller from local directories instead of cloning during the tests.
 
 ```bash
-rm .build/backup-maker-operator -rf
+rm .build/backup-maker-controller -rf
 rm .build/backup-repository -rf
-ln -s {backup-operator-path-there} $(pwd)/.build/backup-maker-operator
+ln -s {backup-operator-path-there} $(pwd)/.build/backup-maker-controller
 ln -s {backup-repository-path-there} $(pwd)/.build/backup-repository
 ```
 
