@@ -5,10 +5,19 @@ Backup Repository is a complex system with a set of repositories, for this reaso
 
 We perform there End-To-End tests for selected software configurations.
 
+Micro components roles
+----------------------
+
+Backup Maker Ecosystem consists of multiple elements, on following diagram you can see how those are cooperating with each other.
+In most cases it is up to you to choose which components do you use.
+
+![components](docs/components.png)
+
+
 Example flow (Kubernetes)
 -------------------------
 
-![](docs/flow.png)
+![flow](docs/flow.png)
 
 1. Desired backup & restore definition is submitted by the user in form of `kind: ScheduledBackup`, `kind: RequestedBackupAction`
 2. API server passes definitions to Backup Maker Controller
@@ -34,6 +43,7 @@ The client is used inside a script, that in Kubernetes is executed inside a Pod.
 1. After Backup Maker Controller applies `kind: Job` or `kind: CronJob` the cluster is creating a `kind: Pod`.
 2. The `kind: Pod` fetches a shell script with a backup & restore procedure **(generated previously by the generator)** and executes.
 3. Executed script calls required client tools like pg_dump, mysqldump, tar etc. to prepare the data, **and calls backup-maker client to interact with the server - upload or download**
+
 
 Versioning
 ----------
