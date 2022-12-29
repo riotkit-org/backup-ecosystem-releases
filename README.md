@@ -42,7 +42,7 @@ The following requirements are automatically installed when using `make` to run 
 
 ### Advanced
 
-#### Using backup-repository and backup-maker-operator from local directories instead of cloning during the tests.
+#### Using backup-repository and backup-maker-controller from local directories instead of cloning during the tests.
 
 ```bash
 rm .build/backup-maker-operator -rf

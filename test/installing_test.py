@@ -16,16 +16,16 @@ class InstallingEndToEndTest(EndToEndTestBase):
           - Pushes to local registry at :5000 port
           - Deploys a Helm Chart from "charts/" subdirectory
         """
-        ns = "backup-maker-operator"
+        ns = "backup-maker-controller"
 
-        with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-operator",
+        with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-controller",
                                            self.release["CONTROLLER_VERSION"]):
 
             with self.kubernetes_namespace(ns):
                 self.apply_manifests("config/crd/bases")
                 self.skaffold_deploy()
 
-                assert self.has_pod_with_label_present("app=backup-maker-operator")
+                assert self.has_pod_with_label_present("app=backup-maker-controller")
 
     def test_backup_repository_installs_and_not_crashes(self):
         """

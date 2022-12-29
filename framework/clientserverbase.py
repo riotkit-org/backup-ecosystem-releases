@@ -227,7 +227,7 @@ class ClientServerBase(EndToEndTestBase):
             yield
         except:
             self.logs(pod_label="app.kubernetes.io/name=backup-repository-server", ns="backups", allow_failure=True)
-            self.logs(pod_label="app=backup-maker-operator", ns="backup-maker-operator", allow_failure=True)
+            self.logs(pod_label="app=backup-maker-controller", ns="backup-maker-controller", allow_failure=True)
             raise
 
     def _deploy_client_and_server(self, delete: bool = True, retries_left: int = 0):
@@ -246,8 +246,8 @@ class ClientServerBase(EndToEndTestBase):
                     self.skaffold_deploy()
 
                     # client
-                    with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-operator", client_ver):
-                        with self.kubernetes_namespace("backup-maker-operator", persistent=not delete):
+                    with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-controller", client_ver):
+                        with self.kubernetes_namespace("backup-maker-controller", persistent=not delete):
                             self.apply_manifests("config/crd/bases")
                             self.skaffold_deploy()
                             os.chdir(pwd)
