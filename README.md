@@ -5,6 +5,19 @@ Backup Repository is a complex system with a set of repositories, for this reaso
 
 We perform there End-To-End tests for selected software configurations.
 
+Example flow
+------------
+
+![](docs/flow.png)
+
+1. Desired backup & restore definition is submitted by the user in form of `kind: ScheduledBackup`, `kind: RequestedBackupAction`
+2. API server passes definitions to Backup Maker Controller
+3. Backup Maker Controller creates `kind: Job`, `kind: CronJob`, `kind: Secret`
+4. Backup & Restore procedures are templated by [Backup Maker Generator](https://github.com/riotkit-org/br-backup-maker/tree/main/generate) and put into `kind: ConfigMap`
+5. When the `kind: Job` starts the generated script loaded from `kind: ConfigMap` is running inside a `kind: Pod`
+6. **Some tooling (like mysqldump, psql, tar etc.) inside container** is used to dump or restore the data
+7. [backup-maker CLI client](https://github.com/riotkit-org/br-backup-maker) is communicating with server to download or upload the backup
+
 Versioning
 ----------
 
