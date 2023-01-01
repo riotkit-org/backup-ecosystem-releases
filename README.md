@@ -99,7 +99,8 @@ export SKIP_GIT_PULL=true
 #### Skipping installation of server and client
 
 ```bash
-export SKIP_CLIENT_SERVER_INSTALL=true
+export SKIP_SERVER_INSTALL=true
+export SKIP_CLIENT_INSTALL=true
 ```
 
 #### Increasing verbosity

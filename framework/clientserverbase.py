@@ -109,7 +109,7 @@ class _Client:
     _parent: EndToEndTestBase
 
     def i_schedule_a_backup(self, name: str, operation: str, email: str, cronjob_enabled: bool, schedule_every: str,
-                            collection_id: str, access_token: str, template_name: str, template_vars: str):
+                            collection_id: str, access_token: str, template_name: str, template_vars: str, template_kind: str):
         self._parent.apply_yaml(ns=self.ns, yaml=f"""
         ---
         apiVersion: v1
@@ -146,7 +146,7 @@ class _Client:
                 secretName: backup-keys
                 tokenKey: token
             templateRef:
-                kind: ClusterBackupProcedureTemplate
+                kind: {template_kind}
                 name: {template_name}
         
             vars: |
@@ -214,8 +214,7 @@ class ClientServerBase(EndToEndTestBase):
         # --- hack: deploy only once, before first test starts
         current_test_class = self.__class__.__name__
         if ClientServerBase.last_test_class != current_test_class:
-            if os.getenv("SKIP_CLIENT_SERVER_INSTALL") != "true":
-                self._deploy_client_and_server(delete=False, retries_left=5)
+            self._deploy_client_and_server(delete=False, retries_left=5)
             self.port_forward(local_port=8070, remote_port=8080, ns="backups",
                               pod_label="app.kubernetes.io/name=backup-repository-server")
             ClientServerBase.last_test_class = current_test_class
@@ -243,13 +242,14 @@ class ClientServerBase(EndToEndTestBase):
         try:
             with cloned_repository_at_revision("https://github.com/riotkit-org/backup-repository", server_ver):
                 with self.kubernetes_namespace("backups", persistent=not delete):
-                    self.skaffold_deploy()
+                    self.skaffold_deploy(skip_when=os.getenv("SKIP_SERVER_INSTALL") == "true")
 
                     # client
-                    with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-controller", client_ver):
+                    with cloned_repository_at_revision("https://github.com/riotkit-org/backup-maker-controller",
+                                                       client_ver):
                         with self.kubernetes_namespace("backup-maker-controller", persistent=not delete):
                             self.apply_manifests("config/crd/bases")
-                            self.skaffold_deploy()
+                            self.skaffold_deploy(skip_when=os.getenv("SKIP_CLIENT_INSTALL") == "true")
                             os.chdir(pwd)
 
         # be bulletproof on CI, avoid random failures sacrificing execution time

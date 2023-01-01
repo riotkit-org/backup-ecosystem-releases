@@ -94,10 +94,15 @@ class EndToEndTestBase(unittest.TestCase):
                 self.current_ns = prev_ns
                 run(["kubectl", "delete", "ns", name, "--wait=true"])
 
-    def skaffold_deploy(self):
+    def skaffold_deploy(self, skip_when: bool = None):
         """
         Deploy a Kubernetes application using Skaffold
         """
+
+        if skip_when:
+            print(f"Skipping skaffold in {os.getcwd()}")
+            return
+
         print(f"Running skaffold in {os.getcwd()}")
 
         assert os.path.isfile("skaffold.yaml"), "Cannot find skaffold.yaml in " + os.getcwd()

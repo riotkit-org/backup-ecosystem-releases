@@ -1,5 +1,10 @@
+import typing
+import os
 from framework import ClientServerBase
 from framework.postgresbase import PostgresTestingHelper
+
+
+TESTS_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/test"
 
 
 class PostgresBackupTest(ClientServerBase):
@@ -14,7 +19,16 @@ class PostgresBackupTest(ClientServerBase):
             db_name="backuprepository",
         )
 
-    def test_postgres_backup_and_restore(self):
+    def test_postgres_backup_and_restore_with_internal_template(self):
+        self._run_simple_test(pg_template="pg15", template_type="internal")
+
+    def test_postgres_backup_and_restore_with_template_from_crd(self):
+        def prepare():
+            self.apply_manifests(TESTS_DIR + "/data/postgres_backup_test/pg15-test-template.yaml")
+
+        self._run_simple_test(pg_template="pg15-test-template", template_type="ClusterBackupProcedureTemplate", prepare=prepare)
+
+    def _run_simple_test(self, pg_template: str, template_type: str, prepare: typing.Callable = None):
         with self.in_dir("test/data/postgres_backup_test"), \
                 self.kubernetes_namespace("subject"), \
                 self.show_logs_on_failure():
@@ -50,6 +64,9 @@ class PostgresBackupTest(ClientServerBase):
             # Prepare data of our SUBJECT - Postgres DB we want to Backup & Modify & Restore
             # -------------------------------------------------------------------------------
 
+            if prepare:
+                prepare()
+
             # Prepare the subject of our backup
             # language=postgresql
             self.postgres.query("""
@@ -69,7 +86,8 @@ class PostgresBackupTest(ClientServerBase):
                 schedule_every="00 02 * * *",
                 collection_id="iwa-ait",
                 access_token=access_token,
-                template_name="pg15",
+                template_name=pg_template,
+                template_kind=template_type,
                 email="example@iwa-ait.org",
                 # language=yaml
                 template_vars=f"""
@@ -98,7 +116,7 @@ class PostgresBackupTest(ClientServerBase):
             )
             assert self.client.backup_has_status(name="iwa-ait-v1-backup", expected=True)
 
-            # Add EXTRA ROW that would be reverted after the backup was restored
+            # Add EXTRA ROW that would be reverted after the backup was kubectlrestored
             self.postgres.query("""
                 INSERT INTO public.movies (id, name) VALUES (2, 'Some-wrong-title');
                 COMMIT;
