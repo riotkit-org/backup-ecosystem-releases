@@ -223,11 +223,14 @@ def cloned_repository_at_revision(url: str, version: str):
     try:
         os.chdir(BUILD_DIR + "/" + repo_name)
         run(["git", "checkout", version])
+        is_not_on_branch = sp.check_output(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "HEAD"]) == "HEAD"
 
         if os.getenv("SKIP_GIT_PULL") == "true":
             print("Skipping git pull because of SKIP_GIT_PULL=true")
         elif os.path.islink(BUILD_DIR + "/" + repo_name):
             print(f"Skipping git pull because {BUILD_DIR}/{repo_name} is a link")
+        elif is_not_on_branch:
+            print("Skipping git pull, because we are not on a branch right now")
         else:
             run(["git", "pull"])
             run(["git", "reset", "--hard", "HEAD"])
