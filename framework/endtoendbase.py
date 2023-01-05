@@ -224,7 +224,7 @@ def cloned_repository_at_revision(url: str, version: str):
         os.chdir(BUILD_DIR + "/" + repo_name)
         run(["git", "checkout", version])
         is_not_on_branch = sp.check_output(["git", "rev-parse",
-                                            "--abbrev-ref", "--symbolic-full-name", "HEAD"]).strip() == "HEAD"
+                                            "--abbrev-ref", "--symbolic-full-name", "HEAD"]).strip() == b"HEAD"
 
         if os.getenv("SKIP_GIT_PULL") == "true":
             print("Skipping git pull because of SKIP_GIT_PULL=true")
