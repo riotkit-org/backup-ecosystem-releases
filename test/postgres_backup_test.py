@@ -1,3 +1,4 @@
+import time
 import typing
 import os
 from framework import ClientServerBase
@@ -132,6 +133,7 @@ class PostgresBackupTest(ClientServerBase):
                 ref="app1",
             )
             assert self.client.backup_has_status(name="iwa-ait-v1-restore", expected=True)
+            time.sleep(4)
 
             # Check
             self.assertEqual([('Ni dieu ni maitre, une historie de l"anarchisme',)],
