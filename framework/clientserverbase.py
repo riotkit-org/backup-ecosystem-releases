@@ -185,14 +185,14 @@ class _Client:
             result = out == 'true,false'
 
             if result != expected and retries_left > 0:
-                time.sleep(2)
+                time.sleep(4)
                 return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
 
             return result
 
         except sp.CalledProcessError:
             if retries_left > 0:
-                time.sleep(2)
+                time.sleep(4)
                 return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
             raise
 
