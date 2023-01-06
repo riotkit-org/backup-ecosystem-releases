@@ -114,8 +114,6 @@ class EndToEndTestBase(unittest.TestCase):
         with open("skaffold.yaml", "r") as f:
             content = f.read()
 
-        print("!!!!!!!!!!!!!!", sp.check_output(["env"]).decode('utf-8'))
-
         if "build:" in content:
             run(["skaffold", "build",
                  "--tag", "e2e",
