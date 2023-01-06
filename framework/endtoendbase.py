@@ -28,6 +28,10 @@ class EndToEndTestBase(unittest.TestCase):
         cls.release = dotenv.dotenv_values(TESTS_DIR + "/../release.env")
         os.environ["PATH"] = BUILD_DIR + ":" + os.getenv("PATH")
 
+        # append GOROOT/bin to the path for the Skaffold's KO builder which not always can find right Go binary
+        if "GOROOT" in os.environ:
+            os.environ["PATH"] = os.environ["PATH"] + ":" + os.environ["GOROOT"] + "/bin"
+
     @staticmethod
     def _setup_cluster():
         """
@@ -109,6 +113,8 @@ class EndToEndTestBase(unittest.TestCase):
 
         with open("skaffold.yaml", "r") as f:
             content = f.read()
+
+        print("!!!!!!!!!!!!!!", sp.check_output(["env"]).decode('utf-8'))
 
         if "build:" in content:
             run(["skaffold", "build",
