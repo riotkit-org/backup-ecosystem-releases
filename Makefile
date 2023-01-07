@@ -11,7 +11,7 @@ prepare-tools:
 	# kubens
 	@test -f .build/kubens || (curl -sL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens --output .build/kubens && chmod +x .build/kubens)
 	# backup-repository server (for encoding passwords)
-	@test -f .build/br || (curl -sL https://github.com/riotkit-org/backup-repository/releases/download/v4.0.0-rc17/backup-repository_4.0.0-rc17_linux_amd64.tar.gz --output /tmp/br.tar.gz && tar xf /tmp/br.tar.gz -C /tmp && mv /tmp/backup-repository .build/br && chmod +x .build/br)
+	@test -f .build/br || (curl -sL https://github.com/riotkit-org/backup-repository/releases/download/v4.0.0/backup-repository_4.0.0_linux_amd64.tar.gz --output /tmp/br.tar.gz && tar xf /tmp/br.tar.gz -C /tmp && mv /tmp/backup-repository .build/br && chmod +x .build/br)
 
 fix-hosts:
 	cat /etc/hosts | grep "bmt-registry" > /dev/null || (sudo /bin/bash -c "echo '127.0.0.1 bmt-registry' >> /etc/hosts")

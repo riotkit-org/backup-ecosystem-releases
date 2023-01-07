@@ -27,7 +27,8 @@ class PostgresBackupTest(ClientServerBase):
         def prepare():
             self.apply_manifests(TESTS_DIR + "/data/postgres_backup_test/pg15-test-template.yaml")
 
-        self._run_simple_test(pg_template="pg15-test-template", template_type="ClusterBackupProcedureTemplate", prepare=prepare)
+        self._run_simple_test(pg_template="pg15-test-template",
+                              template_type="ClusterBackupProcedureTemplate", prepare=prepare)
 
     def _run_simple_test(self, pg_template: str, template_type: str, prepare: typing.Callable = None):
         with self.in_dir("test/data/postgres_backup_test"), \

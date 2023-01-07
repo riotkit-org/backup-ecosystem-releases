@@ -4,6 +4,7 @@ import os
 import subprocess as sp
 import textwrap
 import time
+from json import loads as json_loads
 
 import requests
 from .endtoendbase import EndToEndTestBase, cloned_repository_at_revision
@@ -169,30 +170,36 @@ class _Client:
                 name: {ref}
         """)
 
-    def backup_has_status(self, name: str, expected: bool,
-                          kubectl_timeout: int = 10, retries_left: int = 10) -> bool:
+    def backup_has_status(self, name: str, expected: bool, kubectl_timeout: int = 10,
+                          retries_left: int = 30, wait_time: int = 1) -> bool:
         try:
-            try:
-                self._parent.kubectl(f"wait --for=jsonpath='.status.childrenResourcesHealth[0].running'=false "
-                                     f"requestedbackupaction {name} -n subject --timeout={kubectl_timeout}s", shell=True)
-            except:
-                pass
+            cmd = ["get", "requestedbackupaction", name, "-o", "json"]
+            out = json_loads(self._parent.kubectl(cmd).lower().strip().strip("'"))
+            print("backup_has_status = " + str(out['status']))
 
-            cmd = [
-                "get", "requestedbackupaction", name,
-                "-o", "jsonpath='{.status.healthy},{.status.childrenResourcesHealth[0].running}'"]
-            out = self._parent.kubectl(cmd).lower().strip().strip("'")
-            result = out == 'true,false'
+            healthy = out['status']['healthy'] is True
+            any_resource_running = False
+            for resource in out['status']['childrenresourceshealth']:
+                if resource['running']:
+                    any_resource_running = True
+
+            # CONDITION: backup/restore needs to be finished and HEALTHY
+            result = not any_resource_running and healthy
 
             if result != expected and retries_left > 0:
-                time.sleep(4)
+                time.sleep(wait_time)
                 return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
 
             return result
 
+        except KeyError:
+            if retries_left > 0:
+                time.sleep(wait_time)
+                return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
+            raise
         except sp.CalledProcessError:
             if retries_left > 0:
-                time.sleep(4)
+                time.sleep(wait_time)
                 return self.backup_has_status(name, expected, kubectl_timeout, retries_left - 1)
             raise
 
